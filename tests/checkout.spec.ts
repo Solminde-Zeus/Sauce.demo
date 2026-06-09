@@ -1,81 +1,70 @@
-import { test, expect} from '@playwright/test'
-import { UserCredentials,UserType,users } from '../test-data/users';
-import { webkit, chromium, firefox } from 'playwright';
- 
+import {test,expect } from '@playwright/test'
+import { UserCredentials,UserType,users } from '../test-data/users'
+import { products } from '../test-data/products';
+import { Userdata, Userdatas } from '../test-data/fill_user';
 
-
-test('Test_Case_10: Check out with valid data', async ({ page }) => {
-    //  NOW to the login page  
-    await page.goto('https://www.saucedemo.com');
-    const standardUser = users.find(u => u.type === 'standard');
-    if (!standardUser) throw new Error('Standard user DATA is not found in mock data');
-    //  Enter the username and password, and click the login button
-    await page.locator('.login-box .form_group .input_error').first().fill(standardUser.username);
-    await page.locator('[data-test="password"]').fill(standardUser.password);
-    await page.locator('[data-test="login-button"]').click();
-    //  Add the first item to the cart
-    await page.locator('.inventory_list .inventory_item').first().locator('button').click();
-    await page.locator('.shopping_cart_link').click();
-    //  Click the checkout button
-    await page.locator('[data-test="checkout"]').click();   
-    //  Fill in the checkout information and continue
-    await page.locator('[data-test="firstName"]').fill('Jayesh');
-    await page.locator('[data-test="lastName"]').fill('Solminde');
-    await page.locator('[data-test="postalCode"]').fill('401303');
-    await page.locator('[data-test="continue"]').click();
-    await page.locator('[data-test="finish"]').click();
-    //  Verify that the checkout overview page is displayed with the correct information
-    await expect(page.locator('[data-test="complete-header"]')).toBeVisible();    
-});
+import { ProductsPage } from '../pages/ProductsPage';
+import { CartPage } from '../pages/CartPage';
+import { CheckoutPage } from '../pages/CheckoutPage';
+import { LoginPage } from '../pages/LoginPage';
 
 
 
-test('Test_Case_11: Check out with no name data', async ({ page }) => {
-    //  NOW to the login page  
-    await page.goto('https://www.saucedemo.com');
-    const standardUser = users.find(u => u.type === 'standard');
-    if (!standardUser) throw new Error('Standard user DATA is not found in mock data');
-    //  Enter the username and password, and click the login button
-    await page.locator('.login-box .form_group .input_error').first().fill(standardUser.username);
-    await page.locator('[data-test="password"]').fill(standardUser.password);
-    await page.locator('[data-test="login-button"]').click();
-    //  Add the first item to the cart
-    await page.locator('.inventory_list .inventory_item').first().locator('button').click();
-    await page.locator('.shopping_cart_link').click();
-    //  Click the checkout button
-    await page.locator('[data-test="checkout"]').click()
-    //  Fill in the checkout information and continue
-    await page.locator('[data-test="firstName"]').fill('');
-    await page.locator('[data-test="lastName"]').fill('');
-    await page.locator('[data-test="postalCode"]').fill('401303');
-    await page.locator('[data-test="continue"]').click();
-    //  Verify that the error message is displayed for missing name data
-    await expect(page.locator('[data-test="error"]')).toBeVisible();
-    await expect(page.locator('[data-test="error"]')).toHaveText('Error: First Name is required');
-});
+let productpage : ProductsPage
+let cartpage : CartPage
+let checkoutpage: CheckoutPage
+let loginpage: LoginPage
+let product1 = products[0];
+let product2 = products[1];
+
+test.describe("Checkout Validation Automation", () => {
+    test.beforeEach(async({page}) => {
+                productpage = new ProductsPage(page);
+                cartpage = new CartPage(page);
+                checkoutpage = new CheckoutPage(page)
+                loginpage = new LoginPage(page)
+
+   
+    
+        await page.goto('https://saucedemo.com');
+   
+
+      await loginpage.login('standard_user', 'secret_sauce')
+      await productpage.addProductToCart(product1.name);
+await productpage.addProductToCart(product2.name);
+await productpage.goToCart()
+      
+
+
+    })
+
+    test('TC__010-Checkout with Valid Details @smoke @checkout', async ({page}) =>{
+
+await cartpage.checkout()
+await checkoutpage.fillCheckoutDetails(Userdatas.firstname,Userdatas.lastname,Userdatas.postalcode);
+await checkoutpage.continueCheckout()
+await expect(page).toHaveURL("https://www.saucedemo.com/checkout-step-two.html")
+
+    })
+        test('TC__011-Checkout with missing first name @negative @checkout', async ({page}) =>{
+await cartpage.checkout()
+await checkoutpage.fillCheckoutDetails("",Userdatas.lastname,Userdatas.postalcode);
+await checkoutpage.continueCheckout()
+await expect(page.locator('[data-test = "error"]')).toHaveText('Error: First Name is required')
+
+
+    })
+            test('TC__012-Checkout with missing postal code @negative @checkout', async ({page}) =>{
+await cartpage.checkout()
+await checkoutpage.fillCheckoutDetails(Userdatas.firstname,Userdatas.lastname,"");
+await checkoutpage.continueCheckout()
+await expect(page.locator('[data-test = "error"]')).toHaveText('Error: Postal Code is required')
 
 
 
-test('Test_Case_12: Check out with no pin code data', async ({ page }) => {
-    //  NOW to the login page  
-    await page.goto('https://www.saucedemo.com');
-    const standardUser = users.find(u => u.type === 'standard');
-    if (!standardUser) throw new Error('Standard user DATA is not found in mock data');
-    //  Enter the username and password, and click the login button
-    await page.locator('.login-box .form_group .input_error').first().fill(standardUser.username);
-    await page.locator('[data-test="password"]').fill(standardUser.password);
-    await page.locator('[data-test="login-button"]').click();
-    //  Add the first item to the cart
-    await page.locator('.inventory_list .inventory_item').first().locator('button').click();
-    await page.locator('.shopping_cart_link').click();
-    //  Click the checkout button
-    await page.locator('[data-test="checkout"]').click()
-    //  Fill in the checkout information and continue
-    await page.locator('[data-test="firstName"]').fill('Jayesh');
-    await page.locator('[data-test="lastName"]').fill('Solminde');
-    await page.locator('[data-test="postalCode"]').fill('');
-    await page.locator('[data-test="continue"]').click();
-    //  Verify that the error message is displayed for missing name data
-    await expect(page.locator('[data-test="error"]')).toBeVisible();
-    await expect(page.locator('[data-test="error"]')).toHaveText('Error: Postal Code is required');
-});
+    })
+
+
+
+
+})
