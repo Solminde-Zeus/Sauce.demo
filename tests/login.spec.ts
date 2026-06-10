@@ -1,70 +1,64 @@
-import {test,expect } from '@playwright/test'
-import { UserCredentials,UserType,users } from '../test-data/users'
-import { products } from '../test-data/products';
-import { Userdata, Userdatas } from '../test-data/fill_user';
-
-import { ProductsPage } from '../pages/ProductsPage';
-import { CartPage } from '../pages/CartPage';
-import { CheckoutPage } from '../pages/CheckoutPage';
+import { test, expect} from '@playwright/test'
+import { UserCredentials,UserType,users } from '../test-data/users';
 import { LoginPage } from '../pages/LoginPage';
 
 
+// 
 
-let productpage : ProductsPage
-let cartpage : CartPage
-let checkoutpage: CheckoutPage
 let loginpage: LoginPage
-let product1 = products[0];
-let product2 = products[1];
 
-test.describe("Checkout Validation Automation", () => {
-    test.beforeEach(async({page}) => {
-                productpage = new ProductsPage(page);
-                cartpage = new CartPage(page);
-                checkoutpage = new CheckoutPage(page)
-                loginpage = new LoginPage(page)
 
-   
+test.describe('Login Functionality Using User Data ', () => {
+
+
+  test.beforeEach(async ({ page }) => {
+    loginpage = new LoginPage(page)
+
+    await loginpage.goto();
+  });
+
+  test('TC_001 - Login page should load @smoke', async ({page})=> {
+    await loginpage.verifyLoginPageIsVisible()
+
+  })
+  test('TC_002 - Valid user should be able to login @smoke', async ({ page }) => {
     
-        await page.goto('https://saucedemo.com');
-   
+    const standardUser = users.find(u => u.type === 'standard');
+    
+    
+    if (!standardUser) throw new Error('Standard user not found ');
 
-      await loginpage.login('standard_user', 'secret_sauce')
-      await productpage.addProductToCart(product1.name);
-await productpage.addProductToCart(product2.name);
-await productpage.goToCart()
-      
+    
+    await loginpage.login(standardUser.username,standardUser.password)
 
+    await expect(page).toHaveURL(/.*inventory.html/);
+  });
 
-    })
+    test('TC_003 - Invalid password should show error @negative @smoke', async ({ page }) => {
+    
+    const standardUser = users.find(u => u.type === 'standard');
+    
+    
+    if (!standardUser) throw new Error('Standard user not found in mock data');
 
-    test('TC__010-Checkout with Valid Details @smoke @checkout', async ({page}) =>{
+    
+     await loginpage.login(standardUser.username,"123434")
+    const errorContainer1 = page.locator('.error-message-container error');
+    await expect(errorContainer1).toBeVisible;
+  });
 
-await cartpage.checkout()
-await checkoutpage.fillCheckoutDetails(Userdatas.firstname,Userdatas.lastname,Userdatas.postalcode);
-await checkoutpage.continueCheckout()
-await expect(page).toHaveURL("https://www.saucedemo.com/checkout-step-two.html")
+  test('TC_004 - Locked user should not be able to login @negative @smoke', async ({ page }) => {
+    
+    const lockedUser = users.find(u => u.type === 'locked');
+    
+    if (!lockedUser) throw new Error('Locked user not found in mock data');
 
-    })
-        test('TC__011-Checkout with missing first name @negative @checkout', async ({page}) =>{
-await cartpage.checkout()
-await checkoutpage.fillCheckoutDetails("",Userdatas.lastname,Userdatas.postalcode);
-await checkoutpage.continueCheckout()
-await expect(page.locator('[data-test = "error"]')).toHaveText('Error: First Name is required')
+    
+   await loginpage.login(lockedUser.username,lockedUser.password)
 
+    
+    const errorContainer = page.locator('.login-box .error-message-container');
+    await expect(errorContainer).toBeVisible();
+  });
 
-    })
-            test('TC__012-Checkout with missing postal code @negative @checkout', async ({page}) =>{
-await cartpage.checkout()
-await checkoutpage.fillCheckoutDetails(Userdatas.firstname,Userdatas.lastname,"");
-await checkoutpage.continueCheckout()
-await expect(page.locator('[data-test = "error"]')).toHaveText('Error: Postal Code is required')
-
-
-
-    })
-
-
-
-
-})
+});
