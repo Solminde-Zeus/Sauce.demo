@@ -1,14 +1,12 @@
-export interface Userdata { 
-  firstname: "Alakh"; 
-  lastname: "JJ" ;
-  postalcode : "20202";
-} 
-
-export const Userdatas: Userdata = {
-  
-     firstname: "Alakh",
-     lastname: "JJ" ,
-     postalcode : "20202"
-
+export interface Userdata {
+  firstname: string;
+  lastname: string;
+  postalcode: string;
 }
+ 
+export const Userdatas: Userdata = {
+  firstname:  'Jayesh',
+  lastname:   'Solminde',
+  postalcode: '401303',
+};
  

@@ -1,96 +1,56 @@
-import {test,expect } from '@playwright/test'
-import { UserCredentials,UserType,users } from '../test-data/users'
+
+import { test } from '@playwright/test';
+import { users } from '../test-data/users';
 import { products } from '../test-data/products';
-import { LoginPage } from '../pages/LoginPage';
+import { loginAs } from '../utils/testHelpers';
 import { ProductsPage } from '../pages/ProductsPage';
 import { CartPage } from '../pages/CartPage';
-
- let productone = products[0];
-let producttwo = products[1];
-
-
-
-let loginpage : LoginPage
-let productpage : ProductsPage
-let cartpage : CartPage
-
-test.describe("Product and Cart Automation testing", () => {
-    test.beforeEach(async({page}) => {
-       
-        await page.goto("https://saucedemo.com");
-       
-        loginpage = new LoginPage(page);
-        productpage = new ProductsPage(page);
-        cartpage = new CartPage(page);
-
-
-   await loginpage.login('standard_user', 'secret_sauce')
-
-    })
-
-
-   test('TC_005 - Product List should be Visible @regression ', async ({page})=> {
-
-     await productpage.verifyProductsPageIsVisible()
-
-
-
-  })
-     test('TC_006- Add one product to the cart @regression @cart', async ({page})=> {
-
-
-    await productpage.addProductToCart(productone.name);
-     await productpage.verifyCartCount(1)
-
-})
-
-
-
-test('TC_007- Remove one Product  @regression @cart', async ({page})=> {
-await productpage.addProductToCart(productone.name)
-await productpage.verifyCartCount(1)
-await productpage.removeProductFromCart(productone.name);
-await expect(page.locator('[data-test= "shopping-cart-badge"]')).toHaveCount(0)
-
-})
-
-
-
-test('TC_009- Cart page should show selected products @regression @cart', async ({page})=> {
-
-
-await productpage.addProductToCart(productone.name);
-await productpage.addProductToCart(producttwo.name);
-await productpage.goToCart()
-await cartpage.verifyProductInCart(productone.name)
-await cartpage.verifyProductInCart(producttwo.name)
-
-
-
-
-
-
-})
-
-test("TC_008 Add multiple products to cart @regression @cart ", async ({ page }) => {
-   await productpage.addProductToCart(productone.name);
-   await productpage.addProductToCart(producttwo.name);
-  await productpage.verifyCartCount(2);
-});
-
  
-
-
-
-
-
-
-
-
-
-})
-
-
-
-
-   
+const standardUser = users.find(u => u.type === 'standard')!;
+const backpack      = products.find(p => p.name === 'Sauce Labs Backpack')!;
+const bikeLight     = products.find(p => p.name === 'Sauce Labs Bike Light')!;
+ 
+let productPage: ProductsPage;
+let cartPage: CartPage;
+ 
+test.describe('Cart - Automation Testing', () => {
+ 
+  test.beforeEach(async ({ page }) => {
+    productPage = new ProductsPage(page);
+    cartPage    = new CartPage(page);
+    await loginAs(page, standardUser);
+  });
+ 
+  test('TC_006 - Product list is visible @regression', async () => {
+    await productPage.verifyProductsPageIsVisible();
+  });
+ 
+  test('TC_007 - Add one product to cart @regression @cart', async () => {
+    await productPage.addProductToCart(backpack.name);
+    await productPage.verifyCartCount(1);
+  });
+ 
+  test('TC_008 - Remove product from cart @regression @cart', async () => {
+    await productPage.addProductToCart(backpack.name);
+    await productPage.verifyCartCount(1);
+    await productPage.removeProductFromCart(backpack.name);
+    await productPage.verifyCartBadgeIsGone();
+  });
+ 
+  test('TC_009 - Add multiple products to cart @regression @cart', async () => {
+    await productPage.addProductToCart(backpack.name);
+    await productPage.addProductToCart(bikeLight.name);
+    await productPage.verifyCartCount(2);
+  });
+ 
+  test('TC_010 - Cart shows all selected products @regression @cart', async () => {
+    await productPage.addProductToCart(backpack.name);
+    await productPage.addProductToCart(bikeLight.name);
+    await productPage.goToCart();
+    await cartPage.verifyProductInCart(backpack.name);
+    await cartPage.verifyProductInCart(bikeLight.name);
+  });
+ 
+});
+ 
+ 

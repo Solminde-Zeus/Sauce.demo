@@ -1,67 +1,74 @@
-import {test,expect } from '@playwright/test'
-import { UserCredentials,UserType,users } from '../test-data/users'
+
+import { test } from '@playwright/test';
+import { users } from '../test-data/users';
 import { products } from '../test-data/products';
-import { Userdata, Userdatas } from '../test-data/fill_user';
-import { loginAsStandardUser } from '../utils/testHelper';
+import { Userdatas } from '../test-data/fill_user';
+import { loginAs } from '../utils/testHelpers';
 import { ProductsPage } from '../pages/ProductsPage';
 import { CartPage } from '../pages/CartPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
-import { LoginPage } from '../pages/LoginPage';
-
-
-
-let productpage : ProductsPage
-let cartpage : CartPage
-let checkoutpage: CheckoutPage
-let loginpage: LoginPage
-let product1 = products[0];
-let product2 = products[1];
-
-test.describe("Checkout Validation Automation", () => {
-    test.beforeEach(async({page}) => {
-                productpage = new ProductsPage(page);
-                cartpage = new CartPage(page);
-                checkoutpage = new CheckoutPage(page)
-                loginpage = new LoginPage(page)
-
-   
-    
-        await page.goto('https://saucedemo.com');
-   
-
-      await loginAsStandardUser(page)
-      await productpage.addProductToCart(product1.name);
-await productpage.addProductToCart(product2.name);
-await productpage.goToCart()
-      
-
-
-    })
-
-test('TC__010-Checkout with Valid Details @smoke @checkout', async ({page}) =>{
-
-await cartpage.checkout()
-await checkoutpage.fillCheckoutDetails(Userdatas.firstname,Userdatas.lastname,Userdatas.postalcode);
-await checkoutpage.continueCheckout()
-await expect(page).toHaveURL("https://www.saucedemo.com/checkout-step-two.html")
-
-    })
-test('TC__011-Checkout with missing first name @negative @checkout', async ({page}) =>{
-await cartpage.checkout()
-await checkoutpage.fillCheckoutDetails("",Userdatas.lastname,Userdatas.postalcode);
-await checkoutpage.continueCheckout()
-await expect(page.locator('[data-test = "error"]')).toHaveText('Error: First Name is required')
-
-
-    })
-test('TC__012-Checkout with missing postal code @negative @checkout', async ({page}) =>{
-await cartpage.checkout()
-await checkoutpage.fillCheckoutDetails(Userdatas.firstname,Userdatas.lastname,"");
-await checkoutpage.continueCheckout()
-await expect(page.locator('[data-test = "error"]')).toHaveText('Error: Postal Code is required')
-
-
-
-    })
-
-})
+ 
+const standardUser = users.find(u => u.type === 'standard')!;
+const backpack      = products.find(p => p.name === 'Sauce Labs Backpack')!;
+const bikeLight     = products.find(p => p.name === 'Sauce Labs Bike Light')!;
+ 
+let productPage: ProductsPage;
+let cartPage: CartPage;
+let checkoutPage: CheckoutPage;
+ 
+test.describe('Checkout - Automation Testing', () => {
+ 
+  test.beforeEach(async ({ page }) => {
+    productPage  = new ProductsPage(page);
+    cartPage     = new CartPage(page);
+    checkoutPage = new CheckoutPage(page);
+ 
+    await loginAs(page, standardUser);
+    await productPage.addProductToCart(backpack.name);
+    await productPage.addProductToCart(bikeLight.name);
+    await productPage.goToCart();
+  });
+ 
+  test('TC_011 - Checkout page is visible @smoke @checkout', async () => {
+    await cartPage.checkout();
+    await checkoutPage.verifyCheckoutStepOneIsVisible();
+  });
+ 
+  test('TC_012 - Valid details moves to step two @smoke @checkout', async () => {
+    await cartPage.checkout();
+    await checkoutPage.fillCheckoutDetails(Userdatas.firstname, Userdatas.lastname, Userdatas.postalcode);
+    await checkoutPage.continueCheckout();
+    await checkoutPage.verifyCheckoutStepTwoIsVisible();
+  });
+ 
+  test('TC_013 - Missing first name shows error @negative @checkout', async () => {
+    await cartPage.checkout();
+    await checkoutPage.fillCheckoutDetails('', Userdatas.lastname, Userdatas.postalcode);
+    await checkoutPage.continueCheckout();
+    await checkoutPage.verifyMissingFirstNameError();
+  });
+ 
+  test('TC_014 - Missing last name shows error @negative @checkout', async () => {
+    await cartPage.checkout();
+    await checkoutPage.fillCheckoutDetails(Userdatas.firstname, '', Userdatas.postalcode);
+    await checkoutPage.continueCheckout();
+    await checkoutPage.verifyMissingLastNameError();
+  });
+ 
+  test('TC_015 - Missing postal code shows error @negative @checkout', async () => {
+    await cartPage.checkout();
+    await checkoutPage.fillCheckoutDetails(Userdatas.firstname, Userdatas.lastname, '');
+    await checkoutPage.continueCheckout();
+    await checkoutPage.verifyMissingPostalCodeError();
+  });
+ 
+  test('TC_016 - Full checkout flow completes order @smoke @checkout', async () => {
+    await cartPage.checkout();
+    await checkoutPage.fillCheckoutDetails(Userdatas.firstname, Userdatas.lastname, Userdatas.postalcode);
+    await checkoutPage.continueCheckout();
+    await checkoutPage.finishCheckout();
+    await checkoutPage.verifyOrderConfirmation();
+  });
+ 
+});
+ 

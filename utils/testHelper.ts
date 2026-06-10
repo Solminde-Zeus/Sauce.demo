@@ -1,9 +1,11 @@
-import { Page } from '@playwright/test'; 
-import { LoginPage } from '../pages/LoginPage'; 
  
-export async function loginAsStandardUser(page: Page): Promise<void> { 
-  const loginPage = new LoginPage(page); 
+import { Page } from '@playwright/test';
+import { LoginPage } from '../pages/LoginPage';
+import { UserCredentials } from '../test-data/users';
  
-  await loginPage.goto(); 
-  await loginPage.login('standard_user', 'secret_sauce'); 
-} 
+export async function loginAs(page: Page, user: UserCredentials): Promise<void> {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login(user.username, user.password);
+}
+ 
